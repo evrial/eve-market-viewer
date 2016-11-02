@@ -1,0 +1,160 @@
+@font-face {
+  font-family: 'Eve Sans Neue';
+  src: url('fonts/evesansneue-regular.otf');
+}
+
+@font-face {
+  font-family: 'Eve Sans Neue';
+  src: url('fonts/evesansneue-bold.otf');
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'Eve Sans Neue';
+  src: url('fonts/evesansneue-italic.otf');
+  font-style: italic;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  /* make sure it is at least as tall as the viewport */
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background: black url(images/bg.jpg) top left no-repeat;
+  background-attachment: fixed;
+  color: rgb(200,200,200);
+  font: 0.9em "Eve Sans Neue", "Trebuchet MS", sans-serif;
+}
+
+#container {
+  display: block;
+  position: absolute;
+  margin: 1%;
+  padding: 5px;
+  bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(22, 29, 38, 0.5);
+  /*background-color: rgba(45, 45, 45, 0.5);*/
+  border-radius: 3px;
+  box-shadow: 0 0 12px 3px rgba(0,0,0,0.5);
+}
+
+#regionSelect {
+  padding: inherit;
+}
+
+#regionSelector-menu {
+  max-height: 90vh;
+  overflow-y: auto;
+  /* prevent horizontal scrollbar */
+  overflow-x: hidden;
+}
+
+.ui-button {
+  width: initial !important;
+}
+
+.ui-autocomplete {
+  max-height: 50vh;
+  overflow-y: auto;
+  /* prevent horizontal scrollbar */
+  overflow-x: hidden;
+}
+
+.ui-menu-item-icon {
+    background-repeat: no-repeat;
+    background-position: 0, 0;
+    background-size: contain;
+    padding-left: 1.5em;
+}
+
+#search {
+  width: 30%;
+  padding: .3em .3em;
+  font: 1em arial,sans-serif;
+}
+
+div.marketgroup {
+  float: left;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+  width: 25%;
+  max-width: 300px;
+  max-height: 90vh;
+}
+
+div.marketgroup ul {
+  padding-left: 5px;
+  list-style-type: none;
+  user-select: none;
+}
+
+div.marketgroup li {
+  display: block;
+  cursor: pointer;
+}
+
+.groupLink {
+  padding: 2px;
+  margin: 2px;
+  background-color: rgba(45, 45, 45, 0.95);
+  border: 0 solid black;
+  border-bottom: 1px;
+  border-top: 1px;
+}
+
+#MarketDisplay {
+  overflow: auto;
+  max-height: 90vh;
+  padding-left: 1.5%;
+  padding-right: 1.5%;
+}
+
+#itemDescription h2 {
+  display: inline-flex;
+  align-items: center;
+  /*margin: auto;*/
+}
+
+#itemDescription h2 img {
+  box-shadow: 0 0 12px 3px rgba(0,0,0,0.5);
+  margin-right: 0.5em;
+}
+
+#itemDescription p {
+  margin: auto;
+  /*white-space: pre-line;*/
+}
+
+#itemDescription font {
+  font-size: 1.1em !important;
+}
+
+/*
+ * Table styles
+ */
+
+table.dataTable tbody tr {
+  background-color: #2d2d2d;
+}
+
+table.dataTable.hover tbody tr:hover,
+table.dataTable.hover tbody tr.odd:hover,
+table.dataTable.hover tbody tr.even:hover {
+  background-color: #5d5d5d;
+}
+
+table.dataTable.row-border tbody th,
+table.dataTable.row-border tbody td,
+table.dataTable.display tbody th,
+table.dataTable.display tbody td {
+  border-top: 1px solid black;
+}

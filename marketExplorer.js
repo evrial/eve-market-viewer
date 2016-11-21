@@ -12,16 +12,120 @@
 // Configuration parameters
 var baseURL = "https://crest-tq.eveonline.com";
 var endpoints;
-var regions={};  // {regionid: regionobj}
+var regions = {};  // {int:id: obj:region}
 var marketGroups;
 var currentRegion;
-// var currentGroup;
-var searchObj=Array();
-var presetRegion='The Forge';
-var presetTypeid=29668;
+var searchObj = [];
+var presetRegion = 'The Forge';
+var presetTypeid = 29668;
 
 
 (function ($, window, document) {
+
+    // initialize swagger client, point to a resource listing
+    window.client = new SwaggerClient({
+        url: "https://esi.tech.ccp.is/latest/swagger.json?datasource=tranquility",
+        success: function() {}
+    });
+
+    function drawChart() {
+
+        client.Market.get_markets_region_id_history(
+            {region_id:currentRegion.id, type_id:presetTypeid},
+            {responseContentType: 'application/json'},
+            function(data) {
+                var average = [],
+                    highest = [],
+                    lowest = [],
+                    volume = [];
+                for (var i=0, len=data.obj.length; i < len; i++) {
+                    average.push([Date.parse(data.obj[i].date), data.obj[i].average]);
+                    highest.push([Date.parse(data.obj[i].date), data.obj[i].highest]);
+                    lowest.push([Date.parse(data.obj[i].date), data.obj[i].lowest]);
+                    volume.push([Date.parse(data.obj[i].date), data.obj[i].volume]);
+                }
+
+                Highcharts.stockChart('chart', {
+                    // title: {
+                    //     text: typename
+                    // },
+
+                    // subtitle: {
+                    //     text: currentRegion.name
+                    // },
+                    rangeSelector: {
+                        selected: 1
+                    },
+                    legend: {
+                        enabled: true
+                    },
+                    // plotOptions: {
+                    //     series: {
+                    //         marker: {
+                    //             enabled: true
+                    //         }
+                    //     }
+                    // },
+                    xAxis: {
+                        ordinal: false,
+                        type: 'datetime',
+                        title: {
+                            text: 'Date'
+                        }
+                    },
+                    yAxis: [{
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'Price'
+                        },
+                        height: '70%',
+                        lineWidth: 2
+                    }, {
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'Volume'
+                        },
+                        top: '75%',
+                        height: '25%',
+                        offset: 0,
+                        lineWidth: 2
+                    }],
+
+                    series: [{
+                        name: 'Average',
+                        data: average,
+                        lineWidth: 5,
+                        tooltip: {
+                            valueDecimals: 2
+                        }
+                    }, {
+                        name: 'High',
+                        data: highest,
+                        tooltip: {
+                            valueDecimals: 2
+                        }
+                    }, {
+                        name: 'Low',
+                        data: lowest,
+                        tooltip: {
+                            valueDecimals: 2
+                        }
+                    }, {
+                        name: 'Volume',
+                        type: 'column',
+                        data: volume,
+                        yAxis: 1
+                    }]
+                });
+            }
+        );
+    }
 
     $.urlParam = function(name){
         var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -40,14 +144,14 @@ var presetTypeid=29668;
 
     function loadEndpoints() {
         $.getJSON(baseURL,function(data,status,xhr) {
-            window.endpoints=data;
+            endpoints = data;
             loadRegions();
             loadMarketGroups();
-        }).fail(displayError('CREST offline'));
+        });
     }
 
     function loadRegions() {
-        $.getJSON(window.endpoints.regions.href,function(data,status,xhr) {
+        $.getJSON(endpoints.regions.href,function(data,status,xhr) {
             $.map(data.items,function(value){
                 if ((!value.name.match('.-R00')) || (value.name=='G-R00031')) {
                    $("#regionSelector").append("<option value='"+value.href+"'>"+value.name+"</option>");
@@ -56,13 +160,12 @@ var presetTypeid=29668;
             });
             $(' #regionSelect option:contains("' + presetRegion + '")').prop('selected', true);
             $( "#regionSelector" ).selectmenu( "refresh" );
-            $(" #regionSelect ").show();
             loadRegionData();
         });
     }
 
     function loadMarketGroups() {
-        $.getJSON(window.endpoints.marketGroups.href,function(data,status,xhr) {
+        $.getJSON(endpoints.marketGroups.href,function(data,status,xhr) {
             marketGroups=data.items;
             $.map(marketGroups,function(group){
                 if (typeof group.parentGroup === 'undefined') {
@@ -140,8 +243,10 @@ var presetTypeid=29668;
 
         $.getJSON(baseURL+"/inventory/types/"+presetTypeid+"/",function(data,status,xhr) {
             presetTypeid = data.id;
-            $('#itemDescription').html("<h2><img src='https://imageserver.eveonline.com/Type/"+data.id+"_64.png'>"+data.name+"</h2><p>"+data.description+"</p>");
+            $('#itemDescription').html("<h2><img src='https://imageserver.eveonline.com/Type/"+data.id+"_64.png'>"+data.name+"</h2><p>"+data.description.replace(/[\r\n]+/g, '<br>')+"</p>");
+            drawChart();
         });
+
 
         $.map(results,function(orderlist){
             $.map(orderlist, function(item) {
@@ -176,7 +281,9 @@ var presetTypeid=29668;
              var stateObj = {};
              history.pushState(stateObj, presetTypeid, "?typeid="+presetTypeid+"&region="+regionname);
         }
-        catch(err) { console.log("No pushstate");}
+        catch(err) {
+            console.log("No pushstate");
+        }
 
         });
     }
@@ -211,6 +318,7 @@ var presetTypeid=29668;
             try {
                  history.pushState(null, null, "?typeid="+data.id+"&region="+regionname);
                  presetTypeid = data.id;
+                 drawChart();
             }
             catch(err) {
                 console.log("No pushstate");
@@ -250,7 +358,6 @@ var presetTypeid=29668;
         } else {
             alert('Set a region to get data');
         }
-
     }
 
     function setLanguage() {
@@ -271,7 +378,7 @@ var presetTypeid=29668;
         $('#loadcache').show();
     }
 
-    function loadSearchCache(page=window.endpoints.marketTypes.href) {
+    function loadSearchCache(page=endpoints.marketTypes.href) {
         var cachedata = localStorage.getItem('searchCache');
         if (cachedata) {
             try {
@@ -342,7 +449,7 @@ var presetTypeid=29668;
         });
     }
 
-    function ajaxSetup(token) {
+    function ajaxSetup() {
         var headers = {
             "Accept": "application/json, charset=utf-8"
         };
@@ -353,7 +460,6 @@ var presetTypeid=29668;
         }
         $.ajaxSetup({
             accepts: "application/json, charset=utf-8",
-            // cache: false,
             crossDomain: true,
             type: "GET",
             dataType: "json",
@@ -365,8 +471,21 @@ var presetTypeid=29668;
     }
 
     $(document).ready(function() {
-        ajaxSetup(false);
+        $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+
+        ajaxSetup();
         loadEndpoints();
+
+        // https://jsfiddle.net/adamboduch/EwwEC/
+        $.widget( "app.autocomplete", $.ui.autocomplete, {
+            _renderItem: function( ul, item ) {
+                var result = this._super( ul, item );
+                result.addClass( "ui-menu-item-icon" )
+                    .css( "background-image", "url(" + "https://imageserver.eveonline.com/Type/"+item.id+"_32.png" + ")" );
+
+                return result;
+            }
+        });
 
         $('#buy').DataTable({
             "paging": false,
@@ -441,18 +560,6 @@ var presetTypeid=29668;
         $( "#searchList" ).hide();
         $( "#MarketDisplay" ).hide();
 
-        // https://jsfiddle.net/adamboduch/EwwEC/
-        $.widget( "app.autocomplete", $.ui.autocomplete, {
-            _renderItem: function( ul, item ) {
-                var result = this._super( ul, item );
-                result.addClass( "ui-menu-item-icon" )
-                    .css( "background-image", "url(" + "https://imageserver.eveonline.com/Type/"+item.id+"_32.png" + ")" );
-
-                return result;
-            }
-        });
-
-        $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
     });
 
 }($, window, document));

@@ -4,40 +4,35 @@
 <meta charset="utf-8">
 <title>Market Browser</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/base/jquery-ui.css">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/dataTables.jqueryui.min.css">
 <link rel="stylesheet" href="index.css">
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 <script src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.12/js/dataTables.jqueryui.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.blockUI/2.70/jquery.blockUI.min.js"></script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.15.2/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/df-number-format/2.1.6/jquery.number.min.js"></script>
-<script src="https://rawgit.com/swagger-api/swagger-js/master/browser/swagger-client.min.js"></script>
-<script src="https://rawgit.com/jaubourg/ajaxHooks/master/src/xdr.js"></script>
-
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
 <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
-<script src="http://highcharts.github.io/export-csv/export-csv.js"></script>
-<script src="http://code.highcharts.com/modules/accessibility.js"></script>
-<script src="dark-unica.js"></script>
-
+<script src="hc-dark-unica.js"></script>
+<script src="swagger-client.min.js"></script>
 <script src="marketExplorer.js"></script>
 
 </head>
 <body>
 <div id="container">
-
 <div id="regionSelect">
 <select id="language">
   <option value="Default">Default</option>
   <option value="en">English</option>
   <option value="de">Deutsch</option>
   <option value="fr">Français</option>
-  <option value="ru">Русский язык</option>
+  <option value="ru">Русский</option>
   <option value="ja">日本語</option>
 </select>
 <select id="regionSelector">
@@ -59,6 +54,7 @@
 <div id="MarketDisplay">
   <div id="itemDescription">
   </div>
+  Market cap: <span id="sellCap"></span> / <span id="buyCap"></span>
   <div id="chart">
   </div>
   <div id="orders">

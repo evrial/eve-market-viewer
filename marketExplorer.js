@@ -8,13 +8,13 @@
  *  All other code is under the MIT license.
  *
 */
-
+"use strict";
 // Configuration parameters
 var baseURL = "https://crest-tq.eveonline.com";
 var endpoints;
 var regions = {};  // {int:id: obj:region}
 var marketGroups;
-var currentRegion;
+var currentRegion = {id: 10000002};
 var searchObj = [];
 var presetRegion = 'The Forge';
 var presetTypeid = 29668;
@@ -22,14 +22,40 @@ var presetTypeid = 29668;
 
 (function ($, window, document) {
 
+    var headers = {
+        "Accept": "application/json, charset=utf-8",
+        "Accept-Language": "en"
+    };
+    if ($.cookie('language')) {
+        headers['Accept-Language'] = $.cookie('language');
+    }
+
+    $.ajaxSetup({
+        accepts: "application/json, charset=utf-8",
+        crossDomain: true,
+        type: "GET",
+        dataType: "json",
+        headers: headers,
+        error: function (xhr, status, error) {
+            displayError(error);
+        }
+    });
+    // $.blockUI.defaults.fadeOut = 0;
+    // $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
+    // $(document).ajaxStart(function() {
+    //     $(document.body).css({'cursor' : 'wait'});
+    // }).ajaxStop(function() {
+    //     $(document.body).css({'cursor' : 'auto'});
+    // });
+
     // initialize swagger client, point to a resource listing
     window.client = new SwaggerClient({
         url: "https://esi.tech.ccp.is/latest/swagger.json?datasource=tranquility",
         success: function() {}
     });
 
+// client.Market.get_markets_region_id_orders({region_id: 10000002, type_id: 42231, order_type: 'all'})
     function drawChart() {
-
         client.Market.get_markets_region_id_history(
             {region_id:currentRegion.id, type_id:presetTypeid},
             {responseContentType: 'application/json'},
@@ -37,90 +63,94 @@ var presetTypeid = 29668;
                 var average = [],
                     highest = [],
                     lowest = [],
-                    volume = [];
+                    volume = [],
+                    revenue = [];
                 for (var i=0, len=data.obj.length; i < len; i++) {
                     average.push([Date.parse(data.obj[i].date), data.obj[i].average]);
                     highest.push([Date.parse(data.obj[i].date), data.obj[i].highest]);
                     lowest.push([Date.parse(data.obj[i].date), data.obj[i].lowest]);
                     volume.push([Date.parse(data.obj[i].date), data.obj[i].volume]);
+                    revenue.push([Date.parse(data.obj[i].date), data.obj[i].volume * data.obj[i].average]);
                 }
 
                 Highcharts.stockChart('chart', {
-                    // title: {
-                    //     text: typename
-                    // },
-
-                    // subtitle: {
-                    //     text: currentRegion.name
-                    // },
                     rangeSelector: {
                         selected: 1
                     },
                     legend: {
                         enabled: true
                     },
-                    // plotOptions: {
-                    //     series: {
-                    //         marker: {
-                    //             enabled: true
-                    //         }
-                    //     }
-                    // },
-                    xAxis: {
-                        ordinal: false,
-                        type: 'datetime',
-                        title: {
-                            text: 'Date'
-                        }
+                    credits: {
+                        enabled: false
                     },
-                    yAxis: [{
-                        labels: {
-                            align: 'right',
-                            x: -3
-                        },
+                    xAxis: {
+                        type: 'datetime',
+                        ordinal: false,
+                    },
+                    yAxis: [{ // Primary yAxis
                         title: {
                             text: 'Price'
                         },
-                        height: '70%',
-                        lineWidth: 2
-                    }, {
+                        height: '60%',
+                        opposite: true
+                    }, { // Secondary yAxis
+                        title: {
+                            text: 'Revenue'
+                        },
+                        top: '65%',
+                        height: '35%',
+                        offset: 0,
+                        opposite: true
+                    }, { // Tertiary yAxis
                         labels: {
-                            align: 'right',
-                            x: -3
+                            align: 'left',
+                            x: 0
                         },
                         title: {
                             text: 'Volume'
                         },
-                        top: '75%',
-                        height: '25%',
-                        offset: 0,
-                        lineWidth: 2
+                        top: '65%',
+                        height: '35%',
+                        opposite: false
                     }],
-
                     series: [{
                         name: 'Average',
                         data: average,
-                        lineWidth: 5,
                         tooltip: {
-                            valueDecimals: 2
-                        }
+                            valueDecimals: 2,
+                            valueSuffix: ' ISK'
+                        },
                     }, {
                         name: 'High',
                         data: highest,
+                        // color: 'red',
                         tooltip: {
-                            valueDecimals: 2
+                            valueDecimals: 2,
+                            valueSuffix: ' ISK'
                         }
                     }, {
                         name: 'Low',
                         data: lowest,
                         tooltip: {
-                            valueDecimals: 2
+                            valueDecimals: 2,
+                            valueSuffix: ' ISK'
                         }
                     }, {
                         name: 'Volume',
                         type: 'column',
                         data: volume,
-                        yAxis: 1
+                        yAxis: 2
+                    }, {
+                        name: 'Revenue',
+                        type: 'areaspline',
+                        data: revenue,
+                        yAxis: 1,
+                        tooltip: {
+                            valueDecimals: 2,
+                            valueSuffix: ' ISK'
+                        },
+                        fillOpacity: 0.3,
+                        zIndex: 0
                     }]
                 });
             }
@@ -153,7 +183,7 @@ var presetTypeid = 29668;
     function loadRegions() {
         $.getJSON(endpoints.regions.href,function(data,status,xhr) {
             $.map(data.items,function(value){
-                if ((!value.name.match('.-R00')) || (value.name=='G-R00031')) {
+                if ((!value.name.match('.-R00')) || (value.name==='G-R00031')) {
                    $("#regionSelector").append("<option value='"+value.href+"'>"+value.name+"</option>");
                    regions[value.id] = value;
                 }
@@ -210,12 +240,24 @@ var presetTypeid = 29668;
         }
     }
 
+    function loadRegionData() {
+        if ($("#regionSelector").val() === 'Universe') {
+            loadUniverseMarket();
+            return;
+        }
+        $.getJSON($("#regionSelector").val(),function(data,status,xhr) {
+            currentRegion=data;
+            openItem(baseURL+"/inventory/types/"+presetTypeid+"/");
+            // openItem(type_id, region_id);
+        });
+    }
+
     function loadUniverseMarket() {
         function getData(url) {
             return $.getJSON(url);  // this returns a "promise"
         }
-        var promises = [];
-        var results = [];
+        var promises = [],
+            results = [];
         $.each(regions, function(key,val){
             promises.push(getData(baseURL+"/market/"+val.id+"/orders/sell/?type="+baseURL+"/inventory/types/"+presetTypeid+"/"));
             promises.push(getData(baseURL+"/market/"+val.id+"/orders/buy/?type="+baseURL+"/inventory/types/"+presetTypeid+"/"));
@@ -223,7 +265,7 @@ var presetTypeid = 29668;
 
         $.when.apply($, promises).done(function(){
             for (var i = 0; i < arguments.length; i++) {
-                orders = arguments[i][0].items
+                var orders = arguments[i][0].items
                 if (orders.length > 0){
                     results.push(orders);
                 }
@@ -231,7 +273,7 @@ var presetTypeid = 29668;
 
         var buytable;
         var selltable;
-        $('#MarketDisplay').show();
+        // $('#MarketDisplay').show();
         buytable=$('#buy').DataTable();
         buytable.rows().remove();
         selltable=$('#sell').DataTable();
@@ -239,11 +281,10 @@ var presetTypeid = 29668;
         buytable.draw();
         selltable.draw();
 
-        regionname=$("#regionSelector option:selected").text();
-
         $.getJSON(baseURL+"/inventory/types/"+presetTypeid+"/",function(data,status,xhr) {
             presetTypeid = data.id;
             $('#itemDescription').html("<h2><img src='https://imageserver.eveonline.com/Type/"+data.id+"_64.png'>"+data.name+"</h2><p>"+data.description.replace(/[\r\n]+/g, '<br>')+"</p>");
+
             drawChart();
         });
 
@@ -252,7 +293,7 @@ var presetTypeid = 29668;
             $.map(orderlist, function(item) {
             if (item.buy === true) {
                 buytable.row.add([
-                    regionname,
+                    $("#regionSelector option:selected").text(),
                     $.number(item.volume),
                     $.number(item.price,2),
                     item.location.name,
@@ -263,7 +304,7 @@ var presetTypeid = 29668;
                 ]);
             } else {
                 selltable.row.add([
-                    regionname,
+                    $("#regionSelector option:selected").text(),
                     $.number(item.volume),
                     $.number(item.price,2),
                     item.location.name,
@@ -288,32 +329,23 @@ var presetTypeid = 29668;
         });
     }
 
-    function loadRegionData() {
-        if ($("#regionSelector").val() == 'Universe') {
-            loadUniverseMarket();
-            return;
-        }
-        $.getJSON($("#regionSelector").val(),function(data,status,xhr) {
-            currentRegion=data;
-            openItem(baseURL+"/inventory/types/"+presetTypeid+"/");
-        });
-    }
-
+// https://datatables.net/examples/ajax/custom_data_property.html
+// https://datatables.net/reference/api/ajax.reload()
     function openItem(typehref) {
-        var buytable;
-        var selltable;
-        $('#MarketDisplay').show();
-        buytable=$('#buy').DataTable();
+        var buytable = $('#buy').DataTable(),
+            selltable = $ ('#sell').DataTable(),
+            regionname = $("#regionSelector option:selected").text();
+
         buytable.rows().remove();
-        selltable=$('#sell').DataTable();
         selltable.rows().remove();
         buytable.draw();
         selltable.draw();
-        regionname=$("#regionSelector option:selected").text();
+        // $('#MarketDisplay').show();
 
         $.getJSON(typehref,function(data,status,xhr) {
             $('#itemDescription').html(
-                "<h2><img src='https://imageserver.eveonline.com/Type/"+data.id+"_64.png'>"+data.name+"</h2><p>"+ data.description.replace(/[\r\n]+/g, '<br>') +"</p>");
+                "<h2><img src='https://imageserver.eveonline.com/Type/"+data.id+"_64.png'>"+data.name+"</h2><p>"
+                + data.description.replace(/[\r\n]+/g, '<br>') + "</p>");
 
             try {
                  history.pushState(null, null, "?typeid="+data.id+"&region="+regionname);
@@ -325,9 +357,12 @@ var presetTypeid = 29668;
             }
         });
 
+        var sell_cap = 0, buy_cap = 0;
+
         if (typeof currentRegion != 'undefined') {
             $.getJSON(currentRegion.marketSellOrders.href+'?type='+typehref,function(data,status,xhr) {
                 $.map(data.items,function(item){
+                    sell_cap += item.volume * item.price;
                     selltable.row.add([
                         currentRegion.name,
                         $.number(item.volume),
@@ -338,10 +373,12 @@ var presetTypeid = 29668;
                     ]);
                 });
                 selltable.draw();
+                $("#sellCap").text(nFormatter(sell_cap)).attr('title', $.number(sell_cap));
             });
 
             $.getJSON(currentRegion.marketBuyOrders.href+'?type='+typehref,function(data,status,xhr) {
                 $.map(data.items,function(item){
+                    buy_cap += item.volume * item.price;
                     buytable.row.add([
                         currentRegion.name,
                         $.number(item.volume),
@@ -354,6 +391,7 @@ var presetTypeid = 29668;
                     ]);
                 });
                 buytable.draw();
+                $("#buyCap").text(nFormatter(buy_cap)).attr('title', $.number(buy_cap));
             })
         } else {
             alert('Set a region to get data');
@@ -361,10 +399,10 @@ var presetTypeid = 29668;
     }
 
     function setLanguage() {
-        if ($("#language").val()=="Default") {
-            $.cookie('market-language',null);
+        if ($("#language").val() === "Default") {
+            $.removeCookie('language');
         } else {
-            $.cookie('market-language',$("#language").val());
+            $.cookie('language', $("#language").val());
         }
         location.reload();
     }
@@ -378,7 +416,7 @@ var presetTypeid = 29668;
         $('#loadcache').show();
     }
 
-    function loadSearchCache(page=endpoints.marketTypes.href) {
+    function loadSearchCache(page=baseURL+'/market/types/') {
         var cachedata = localStorage.getItem('searchCache');
         if (cachedata) {
             try {
@@ -427,7 +465,7 @@ var presetTypeid = 29668;
     }
 
     function doSearch() {
-        var searchString=$('#search').val().trim().replace('/','').toLowerCase();
+        var searchString = $('#search').val().trim().replace('/','').toLowerCase();
         $('#marketGroups').hide();
         $('#searchList').empty();
         $('#searchList').show();
@@ -442,6 +480,23 @@ var presetTypeid = 29668;
         });
     }
 
+    // http://stackoverflow.com/a/14994860/1363211
+    function nFormatter(num) {
+         if (num >= 1e12) {
+            return (num / 1e12).toFixed(2).replace(/\.0*$/, '') + 'T';
+         }
+         if (num >= 1e9) {
+            return (num / 1e9).toFixed(1).replace(/\.0*$/, '') + 'B';
+         }
+         if (num >= 1e6) {
+            return (num / 1e6).toFixed().replace(/\.0*$/, '') + 'M';
+         }
+         if (num >= 1e3) {
+            return (num / 1e3).toFixed().replace(/\.0*$/, '') + 'K';
+         }
+         return num;
+    }
+
     function sortByKey(array, key) {
         return array.sort(function(a, b) {
             var x = a[key]; var y = b[key];
@@ -449,31 +504,7 @@ var presetTypeid = 29668;
         });
     }
 
-    function ajaxSetup() {
-        var headers = {
-            "Accept": "application/json, charset=utf-8"
-        };
-
-        if ($.cookie('market-language')) {
-            headers['Accept-Language'] = $.cookie('market-language');
-            $('#language option[value='+ $.cookie('market-language') +']').prop('selected', true);
-        }
-        $.ajaxSetup({
-            accepts: "application/json, charset=utf-8",
-            crossDomain: true,
-            type: "GET",
-            dataType: "json",
-            headers: headers,
-            error: function (xhr, status, error) {
-                displayError(error);
-            }
-        });
-    }
-
     $(document).ready(function() {
-        $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
-
-        ajaxSetup();
         loadEndpoints();
 
         // https://jsfiddle.net/adamboduch/EwwEC/
@@ -527,6 +558,9 @@ var presetTypeid = 29668;
             ]
         });
 
+        $( "#searchList" ).hide();
+        // $( "#MarketDisplay" ).hide();
+
         if (isFinite($.urlParam('typeid')) && ($.urlParam('typeid')!=null)) {
             presetTypeid=parseInt($.urlParam('typeid'));
         }
@@ -534,6 +568,12 @@ var presetTypeid = 29668;
         if ($.urlParam('region')!=null) {
             presetRegion=decodeURIComponent($.urlParam('region'));
         }
+
+        var lang = $.cookie('language') || (navigator.languages
+                    ? navigator.languages[0]
+                    : (navigator.language || navigator.userLanguage)).split('-')[0];
+
+        $('#language option[value='+lang+']').prop('selected', true);
 
         $( "#language" ).selectmenu({
           change: function( event, ui ) {
@@ -557,8 +597,11 @@ var presetTypeid = 29668;
         $('#search').click(function () {
            $(this).select();
         });
-        $( "#searchList" ).hide();
-        $( "#MarketDisplay" ).hide();
+
+        $( document ).tooltip();
+        // $('.majorpoints').click(function(){
+        //     $(this).find('.hider').toggle();
+        // });
 
     });
 

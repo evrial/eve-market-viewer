@@ -19,12 +19,41 @@ var searchObj = [];
 var presetRegion = 'The Forge';
 var presetTypeid = 29668;
 
+// http://stackoverflow.com/a/14994860/1363211
+function nFormatter(num) {
+     if (num >= 1e12) {
+        return (num / 1e12).toFixed(2).replace(/\.0*$/, '') + 'T';
+     }
+     if (num >= 1e9) {
+        return (num / 1e9).toFixed(1).replace(/\.0*$/, '') + 'B';
+     }
+     if (num >= 1e6) {
+        return (num / 1e6).toFixed().replace(/\.0*$/, '') + 'M';
+     }
+     if (num >= 1e3) {
+        return (num / 1e3).toFixed().replace(/\.0*$/, '') + 'K';
+     }
+     return num;
+}
+
+function to_USD(isk) {
+    // convert an in-game ISK to USD equvalent using PLEX price
+    // do not take it seriously
+    return (isk / 1e9 * 17.5).toFixed();
+}
+
+function sortByKey(array, key) {
+    return array.sort(function(a, b) {
+        var x = a[key]; var y = b[key];
+        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+    });
+}
 
 (function ($, window, document) {
 
     var headers = {
         "Accept": "application/json, charset=utf-8",
-        "Accept-Language": "en"
+        // "Accept-Language": "en"
     };
     if ($.cookie('language')) {
         headers['Accept-Language'] = $.cookie('language');
@@ -40,13 +69,12 @@ var presetTypeid = 29668;
             displayError(error);
         }
     });
-    // $.blockUI.defaults.fadeOut = 0;
-    // $(document).ajaxStart($.blockUI).ajaxStop($.unblockUI);
-    // $(document).ajaxStart(function() {
-    //     $(document.body).css({'cursor' : 'wait'});
-    // }).ajaxStop(function() {
-    //     $(document.body).css({'cursor' : 'auto'});
-    // });
+
+    $(document).ajaxStart(function() {
+        $(document.body).css({'cursor' : 'wait'});
+    }).ajaxStop(function() {
+        $(document.body).css({'cursor' : 'auto'});
+    });
 
     // initialize swagger client, point to a resource listing
     window.client = new SwaggerClient({
@@ -54,10 +82,11 @@ var presetTypeid = 29668;
         success: function() {}
     });
 
+// type in browser console:
 // client.Market.get_markets_region_id_orders({region_id: 10000002, type_id: 42231, order_type: 'all'})
     function drawChart() {
         client.Market.get_markets_region_id_history(
-            {region_id:currentRegion.id, type_id:presetTypeid},
+            {region_id: currentRegion.id, type_id: presetTypeid},
             {responseContentType: 'application/json'},
             function(data) {
                 var average = [],
@@ -123,7 +152,6 @@ var presetTypeid = 29668;
                     }, {
                         name: 'High',
                         data: highest,
-                        // color: 'red',
                         tooltip: {
                             valueDecimals: 2,
                             valueSuffix: ' ISK'
@@ -159,12 +187,12 @@ var presetTypeid = 29668;
 
     $.urlParam = function(name){
         var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
-        if (results===null){
-           return null;
-       }
-       else{
-           return results[1] || 0;
-      }
+        if (results===null) {
+            return null;
+        }
+        else {
+            return results[1] || 0;
+        }
     };
 
     // Show error message in main data pane.
@@ -188,7 +216,7 @@ var presetTypeid = 29668;
                    regions[value.id] = value;
                 }
             });
-            $(' #regionSelect option:contains("' + presetRegion + '")').prop('selected', true);
+            $(' #regionSelector option:contains("' + presetRegion + '")').prop('selected', true);
             $( "#regionSelector" ).selectmenu( "refresh" );
             loadRegionData();
         });
@@ -256,8 +284,10 @@ var presetTypeid = 29668;
         function getData(url) {
             return $.getJSON(url);  // this returns a "promise"
         }
+
         var promises = [],
             results = [];
+
         $.each(regions, function(key,val){
             promises.push(getData(baseURL+"/market/"+val.id+"/orders/sell/?type="+baseURL+"/inventory/types/"+presetTypeid+"/"));
             promises.push(getData(baseURL+"/market/"+val.id+"/orders/buy/?type="+baseURL+"/inventory/types/"+presetTypeid+"/"));
@@ -357,12 +387,12 @@ var presetTypeid = 29668;
             }
         });
 
-        var sell_cap = 0, buy_cap = 0;
+        var sellCap = 0, buyCap = 0;
 
         if (typeof currentRegion != 'undefined') {
             $.getJSON(currentRegion.marketSellOrders.href+'?type='+typehref,function(data,status,xhr) {
                 $.map(data.items,function(item){
-                    sell_cap += item.volume * item.price;
+                    sellCap += item.volume * item.price;
                     selltable.row.add([
                         currentRegion.name,
                         $.number(item.volume),
@@ -373,12 +403,12 @@ var presetTypeid = 29668;
                     ]);
                 });
                 selltable.draw();
-                $("#sellCap").text(nFormatter(sell_cap)).attr('title', $.number(sell_cap));
+                $("#sellCap").text('Sell '+nFormatter(sellCap)).attr('title', '$'+to_USD(sellCap));
             });
 
             $.getJSON(currentRegion.marketBuyOrders.href+'?type='+typehref,function(data,status,xhr) {
                 $.map(data.items,function(item){
-                    buy_cap += item.volume * item.price;
+                    buyCap += item.volume * item.price;
                     buytable.row.add([
                         currentRegion.name,
                         $.number(item.volume),
@@ -391,7 +421,7 @@ var presetTypeid = 29668;
                     ]);
                 });
                 buytable.draw();
-                $("#buyCap").text(nFormatter(buy_cap)).attr('title', $.number(buy_cap));
+                $("#buyCap").text('Buy '+nFormatter(buyCap)).attr('title', '$'+to_USD(buyCap));
             })
         } else {
             alert('Set a region to get data');
@@ -480,30 +510,6 @@ var presetTypeid = 29668;
         });
     }
 
-    // http://stackoverflow.com/a/14994860/1363211
-    function nFormatter(num) {
-         if (num >= 1e12) {
-            return (num / 1e12).toFixed(2).replace(/\.0*$/, '') + 'T';
-         }
-         if (num >= 1e9) {
-            return (num / 1e9).toFixed(1).replace(/\.0*$/, '') + 'B';
-         }
-         if (num >= 1e6) {
-            return (num / 1e6).toFixed().replace(/\.0*$/, '') + 'M';
-         }
-         if (num >= 1e3) {
-            return (num / 1e3).toFixed().replace(/\.0*$/, '') + 'K';
-         }
-         return num;
-    }
-
-    function sortByKey(array, key) {
-        return array.sort(function(a, b) {
-            var x = a[key]; var y = b[key];
-            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
-        });
-    }
-
     $(document).ready(function() {
         loadEndpoints();
 
@@ -512,7 +518,7 @@ var presetTypeid = 29668;
             _renderItem: function( ul, item ) {
                 var result = this._super( ul, item );
                 result.addClass( "ui-menu-item-icon" )
-                    .css( "background-image", "url(" + "https://imageserver.eveonline.com/Type/"+item.id+"_32.png" + ")" );
+                    .css( "background-image", "url('https://imageserver.eveonline.com/Type/"+item.id+"_32.png')" );
 
                 return result;
             }
@@ -599,6 +605,13 @@ var presetTypeid = 29668;
         });
 
         $( document ).tooltip();
+
+        $( "#dialog" ).dialog({
+            autoOpen: false
+        });
+        $( "#opener" ).on( "click", function() {
+            $( "#dialog" ).dialog( "open" );
+        });
         // $('.majorpoints').click(function(){
         //     $(this).find('.hider').toggle();
         // });

@@ -24,9 +24,10 @@
 <script src="marketExplorer.js"></script>
 
 </head>
+
 <body>
 <div id="container">
-<div id="regionSelect">
+<div id="navbar">
 <select id="language">
   <option value="Default">Default</option>
   <option value="en">English</option>
@@ -34,6 +35,7 @@
   <option value="fr">Français</option>
   <option value="ru">Русский</option>
   <option value="ja">日本語</option>
+  <option value="zh">中國</option>
 </select>
 <select id="regionSelector">
   <option disabled>Select a region</option>
@@ -42,6 +44,11 @@
 <input type="text" id="search" class="ui-widget ui-widget-content" placeholder="Search term">
 <button id="loadcache" class="ui-button ui-widget ui-corner-all">Search</button>
 <button id="emptycache" class="ui-button ui-widget ui-corner-all">Clear cache</button>
+Market cap: <span id="sellCap"></span> <span id="buyCap"></span><a href="#" id="opener">About</a>
+</div>
+
+<div id="dialog" title="Basic dialog">
+  <p>This is an animated dialog which is useful for displaying information. The dialog window can be moved, resized and closed with the 'x' icon.</p>
 </div>
 
 <div class="marketgroup">
@@ -54,7 +61,6 @@
 <div id="MarketDisplay">
   <div id="itemDescription">
   </div>
-  Market cap: <span id="sellCap"></span> / <span id="buyCap"></span>
   <div id="chart">
   </div>
   <div id="orders">

@@ -31,10 +31,6 @@ body {
   font: 0.9em "Eve Sans Neue", "Trebuchet MS", sans-serif;
 }
 
-a {
-  color: inherit;
-}
-
 #container {
   display: block;
   position: absolute;
@@ -53,6 +49,7 @@ a {
 
 #navbar > a {
   float: right;
+  color: inherit;
 }
 
 .ui-selectmenu-button {

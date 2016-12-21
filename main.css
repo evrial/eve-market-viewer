@@ -25,7 +25,7 @@ html {
 
 body {
   margin: 0;
-  background: black url(images/bg.jpg) top center no-repeat;
+  background: black url('images/bg.jpg') top center no-repeat;
   background-attachment: fixed;
   color: rgb(200,200,200);
   font: 0.9em "Eve Sans Neue", "Trebuchet MS", sans-serif;
@@ -47,7 +47,7 @@ body {
   box-shadow: 0 0 12px 3px rgba(0,0,0,1);
 }
 
-#navbar > a {
+#navbar a {
   float: right;
   color: inherit;
 }
@@ -97,7 +97,7 @@ body {
 }
 
 #buyCap {
-  background-color: #691121;
+  background-color: #8a152b;
   font-size: 1.3em;
   font-weight: bold;
 }
@@ -156,6 +156,10 @@ div.marketgroup li {
 
 #itemDescription font {
   font-size: 1.1em !important;
+}
+
+.wait {
+  cursor: wait;
 }
 
 /*

@@ -16,11 +16,12 @@ const ESI_url = 'https://esi.tech.ccp.is/latest/swagger.json?datasource=tranquil
 let endpoints;
 let marketGroups;
 let searchObj;
-let regions = {};  // {int:id: obj:region}
+let regions = {};  // { (int)id: (obj)region }
 let currentRegion = { id: 10000002 };
 let presetRegion = 'The Forge';
 let presetTypeid = 29668;
 
+// Format float in finance format with different precision
 function nFormatter(num) {
   if (num >= 1e12) return (num / 1e12).toFixed(2).replace(/\.0*$/, '') + 'T';
   if (num >= 1e9) return (num / 1e9).toFixed(1).replace(/\.0*$/, '') + 'B';
@@ -29,16 +30,22 @@ function nFormatter(num) {
   return num;
 }
 
+// Convert an in-game ISK to USD equvalent using PLEX price
+// don't take it seriously
 function ISKtoUSD(num) {
-  // convert an in-game ISK to USD equvalent using PLEX price
-  // do not take it seriously
   return (num / 1e9 * 17.5).toFixed();
 }
 
+// Show error message in main data pane.
+function displayError(error) {
+  $('#data').children().replaceWith(`<span>${error}</span>`);
+}
+
+// ajax wait cursor
 $(document).ajaxStart(function() {
-    $(document.body).css({ 'cursor': 'wait' });
+    $(document.body).addClass('wait');
   }).ajaxStop(function() {
-    $(document.body).css({ 'cursor': 'auto' });
+    $(document.body).removeClass('wait');
   });
 
 // initialize swagger client, point to a resource listing
@@ -69,15 +76,15 @@ $.ajaxSetup({
 
 function drawChart() {
   client.Market.get_markets_region_id_history(
-      {region_id: currentRegion.id, type_id: presetTypeid},
-      {responseContentType: 'application/json'},
+      { region_id: currentRegion.id, type_id: presetTypeid },
+      { responseContentType: 'application/json' },
       function(data) {
           let average = [];
           let highest = [];
           let lowest = [];
           let volume = [];
           let revenue = [];
-          for (let i = 0, len = data.obj.length; i < len; i++) {
+          for (let i = 0, len = data.obj.length; i < len; i += 1) {
             average.push([Date.parse(data.obj[i].date), data.obj[i].average]);
             highest.push([Date.parse(data.obj[i].date), data.obj[i].highest]);
             lowest.push([Date.parse(data.obj[i].date), data.obj[i].lowest]);
@@ -169,18 +176,13 @@ function drawChart() {
 }
 
 $.urlParam = function(name) {
-    var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    const results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results === null) {
       return null;
     } else {
       return results[1] || 0;
     }
   };
-
-// Show error message in main data pane.
-function displayError(error) {
-  $('#data').children().replaceWith(`<span>${error}</span>`);
-}
 
 function loadEndpoints() {
   $.getJSON(CREST_url, function(data, status, xhr) {
@@ -194,11 +196,11 @@ function loadRegions() {
   $.getJSON(endpoints.regions.href, function(data, status, xhr) {
       $.map(data.items, function(value) {
           if ((!value.name.match('.-R00')) || (value.name === 'G-R00031')) {
-            $('#regionSelector').append('<option value=\'' + value.href + '\'>' + value.name + '</option>');
+            $('#regionSelector').append(`<option value='${value.href}'>${value.name}</option>`);
             regions[value.id] = value;
           }
         });
-      $(`#regionSelector option:contains("${presetRegion}")`).prop('selected', true);
+      $(`#regionSelector option:contains('${presetRegion}')`).prop('selected', true);
       $('#regionSelector').selectmenu('refresh');
       loadRegionData();
     });
@@ -209,7 +211,7 @@ function loadMarketGroups() {
       marketGroups = data.items;
       $.map(marketGroups, function(group) {
           if (typeof group.parentGroup === 'undefined') {
-            $('#marketGroups').append('<li data-cresthref=\'' + group.href + '\' class=\'groupLink\' title=\'' + group.description + '\' >' + group.name + '</li>');
+            $('#marketGroups').append(`<li data-cresthref='${group.href}' class='groupLink' title='${group.description}'>${group.name}</li>`);
           }
         });
       $('.groupLink').click(function(event) {
@@ -221,23 +223,23 @@ function loadMarketGroups() {
 }
 
 function openSubGroup(group) {
-  var node;
-  var itemcount = 0;
   if ($(group).children('ul').length) {
     $(group).children('ul').toggle();
   } else {
     $(group).append('<ul class="subdisplay"></ul>');
-    node = $(group).children('ul');
+    const node = $(group).children('ul');
+    let itemcount = 0;
+
     $.map(marketGroups, function(subgroup) {
       if (typeof subgroup.parentGroup !== 'undefined' && subgroup.parentGroup.href === group.dataset.cresthref) {
-        node.append('<li data-cresthref=\'' + subgroup.href + '\' class=\'groupLink\' title=\'' + subgroup.description + '\' >' + subgroup.name + '</li>');
+        node.append(`<li data-cresthref='${subgroup.href}' class='groupLink' title='${subgroup.description}'>${subgroup.name}</li>`);
       }
       if (subgroup.href === group.dataset.cresthref) {
         $.getJSON(subgroup.types.href, function(data, status, xhr) {
             $.map(data.items, function(item) {
                 if (item.marketGroup.href === group.dataset.cresthref) {
-                  node.append('<li data-cresthref=\'' + item.type.href + '\' class=\'itemLink\'><img width=16 hieght=16 src=\'' + item.type.icon.href + '\'  data-cresthref=\'' + item.type.href + '\'>' + item.type.name + '</li>');
-                  itemcount++;
+                  node.append(`<li data-cresthref='${item.type.href}' class='itemLink'><img width=16 hieght=16 src='${item.type.icon.href}' data-cresthref='${item.type.href}'>${item.type.name}</li>`);
+                  itemcount += 1;
                 }
               });
 
@@ -261,6 +263,7 @@ function loadRegionData() {
   $.getJSON($('#regionSelector').val(), function(data, status, xhr) {
       currentRegion = data;
       openItem(`${CREST_url}/inventory/types/${presetTypeid}/`);
+      // TODO:
       // openItem(type_id, region_id);
     });
 }
@@ -273,9 +276,9 @@ function loadUniverseMarket() {
   let promises = [];
   let results = [];
 
-  $.each(regions, function(key, val) {
-      promises.push(getData(`${CREST_url}/market/${val.id}/orders/sell/?type=${CREST_url}/inventory/types/${presetTypeid}/`));
-      promises.push(getData(`${CREST_url}/market/${val.id}/orders/buy/?type=${CREST_url}/inventory/types/${presetTypeid}/`));
+  $.each(regions, function(idx, region) {
+      promises.push(getData(`${CREST_url}/market/${region.id}/orders/sell/?type=${CREST_url}/inventory/types/${presetTypeid}/`));
+      promises.push(getData(`${CREST_url}/market/${region.id}/orders/buy/?type=${CREST_url}/inventory/types/${presetTypeid}/`));
     });
 
   const $buytable = $('#buy').DataTable();
@@ -284,7 +287,7 @@ function loadUniverseMarket() {
   $selltable.rows().remove();
 
   $.when.apply($, promises).done(function(...args) {
-      for (var i = 0; i < args.length; i++) {
+      for (let i = 0; i < args.length; i += 1) {
         const orders = args[i][0].items;
         if (orders.length) {
           results.push(orders);
@@ -293,7 +296,7 @@ function loadUniverseMarket() {
 
       $.getJSON(`${CREST_url}/inventory/types/${presetTypeid}/`, function(data, status, xhr) {
           presetTypeid = data.id;
-          $('#itemDescription').html('<h2><img src=\'https://imageserver.eveonline.com/Type/' + data.id + '_64.png\'>' + data.name + '</h2><p>' + data.description.replace(/[\r\n]+/g, '<br>') + '</p>');
+          $('#itemDescription').html(`<h2><img src='https://imageserver.eveonline.com/Type/${data.id}_64.png'>${data.name}</h2><p>${data.description.replace(/[\r\n]+/g, '<br>')}</p>`);
 
           drawChart();
         });
@@ -327,7 +330,7 @@ function loadUniverseMarket() {
       $buytable.draw();
 
       try {
-        var stateObj = {};
+        const stateObj = {};
         history.pushState(stateObj, presetTypeid, `?typeid=${presetTypeid}&region=${regionname}`);
       }
       catch (err) {
@@ -337,6 +340,7 @@ function loadUniverseMarket() {
     });
 }
 
+// TODO: ajax table
 // https://datatables.net/examples/ajax/custom_data_property.html
 // https://datatables.net/reference/api/ajax.reload()
 function openItem(typehref) {
@@ -353,7 +357,7 @@ function openItem(typehref) {
           `<h2><img src='https://imageserver.eveonline.com/Type/${data.id}_64.png'>${data.name}</h2><p>${data.description.replace(/[\r\n]+/g, '<br>')}</p>`);
 
       try {
-        history.pushState(null, null, '?typeid=' + data.id + '&region=' + regionname);
+        history.pushState(null, null, `?typeid=${data.id}&region=${regionname}`);
         presetTypeid = data.id;
         drawChart();
       }
@@ -376,7 +380,7 @@ function openItem(typehref) {
             ]);
           });
         selltable.draw();
-        $('#sellCap').text('Sell ' + nFormatter(sellCap)).attr('title', '$' + ISKtoUSD(sellCap));
+        $('#sellCap').text(`Sell ${nFormatter(sellCap)}`).attr('title', '$' + ISKtoUSD(sellCap));
       });
 
     $.getJSON(currentRegion.marketBuyOrders.href + '?type=' + typehref, function(data, status, xhr) {
@@ -394,7 +398,7 @@ function openItem(typehref) {
             ]);
           });
         buytable.draw();
-        $('#buyCap').text('Buy ' + nFormatter(buyCap)).attr('title', '$' + ISKtoUSD(buyCap));
+        $('#buyCap').text(`Buy ${nFormatter(buyCap)}`).attr('title', '$' + ISKtoUSD(buyCap));
       });
   } else {
     alert('Set a region to get data');
@@ -419,12 +423,12 @@ function emptyCache() {
   $('#loadcache').show();
 }
 
-function loadSearchCache(page=CREST_url + '/market/types/') {
+function loadSearchCache(page=`${CREST_url}/market/types/`) {
   let cachedata = localStorage.getItem('searchCache');
   if (cachedata) {
     try {
       searchObj = JSON.parse(cachedata);
-      console.log(`Loading from localStorage: ${searchObj.length} items, ${cachedata.length} bytes total.`);
+      console.log(`Loaded from localStorage: ${searchObj.length} items, ${cachedata.length} bytes total.`);
     } catch (e) {
       console.log(e);
     }
@@ -442,7 +446,7 @@ function loadSearchCache(page=CREST_url + '/market/types/') {
               markethref: item.marketGroup.href
             });
         });
-      if (typeof data.next != 'undefined') {
+      if (typeof data.next !== 'undefined') {
         loadSearchCache(data.next.href);
       } else {
         cachedata = JSON.stringify(searchObj);
@@ -474,7 +478,7 @@ function doSearch() {
   $('#searchList').show();
   $.map(searchObj, function(item) {
       if (item.label.toLowerCase().match(searchString)) {
-        $('#searchList').append('<li data-cresthref=\'' + item.href + '\' class=\'itemLink\'><img width=16 height=16 src=\'' + item.icon + '\' data-cresthref=\'' + item.href + '\'>' + item.label + '</li>');
+        $('#searchList').append(`<li data-cresthref='${item.href}' class='itemLink'><img width=16 height=16 src='${item.icon}' data-cresthref='${item.href}'>item.label</li>`);
       }
     });
   $('.itemLink').click(function(event) {
@@ -489,7 +493,7 @@ $(document).ready(function() {
     // https://jsfiddle.net/adamboduch/EwwEC/
     $.widget('app.autocomplete', $.ui.autocomplete, {
         _renderItem: function(ul, item) {
-            var result = this._super(ul, item);
+            const result = this._super(ul, item);
             result.addClass('ui-menu-item-icon')
                 .css('background-image', `url('https://imageserver.eveonline.com/Type/${item.id}_32.png')`);
 
@@ -572,15 +576,14 @@ $(document).ready(function() {
     $('#search').click(function() {
       $(this).select();
     });
-
-    $(document).tooltip();
-
     $('#dialog').dialog({
         autoOpen: false
       });
     $('#opener').on('click', function() {
         $('#dialog').dialog('open');
       });
+
+    $(document).tooltip();
 
   });
 

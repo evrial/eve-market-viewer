@@ -50,6 +50,7 @@ body {
 #navbar a {
   float: right;
   color: inherit;
+  cursor: pointer;
 }
 
 .ui-selectmenu-button {

@@ -15,7 +15,7 @@ const CREST_url = 'https://crest-tq.eveonline.com';
 const ESI_url = 'https://esi.tech.ccp.is/latest/swagger.json?datasource=tranquility';
 let endpoints;
 let marketGroups;
-let searchObj;
+let searchObj = [];
 let regions = {};  // { (int)id: (obj)region }
 let currentRegion = { id: 10000002 };
 let presetRegion = 'The Forge';
@@ -579,10 +579,12 @@ $(document).ready(function() {
     $('#dialog').dialog({
         autoOpen: false
       });
-    $('#opener').on('click', function() {
+    $('#opener').click(function() {
         $('#dialog').dialog('open');
       });
-
+    // $('h2').click(function() {
+    //     $(this).next('table').toggle();
+    // });
     $(document).tooltip();
 
   });

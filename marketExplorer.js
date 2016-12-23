@@ -478,7 +478,7 @@ function doSearch() {
   $('#searchList').show();
   $.map(searchObj, function(item) {
       if (item.label.toLowerCase().match(searchString)) {
-        $('#searchList').append(`<li data-cresthref='${item.href}' class='itemLink'><img width=16 height=16 src='${item.icon}' data-cresthref='${item.href}'>item.label</li>`);
+        $('#searchList').append(`<li data-cresthref='${item.href}' class='itemLink'><img width=16 height=16 src='${item.icon}' data-cresthref='${item.href}'>${item.label}</li>`);
       }
     });
   $('.itemLink').click(function(event) {
@@ -585,7 +585,9 @@ $(document).ready(function() {
     // $('h2').click(function() {
     //     $(this).next('table').toggle();
     // });
-    $(document).tooltip();
+    $(document).tooltip({
+      show: { delay: 500 }
+    });
 
   });
 

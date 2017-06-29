@@ -19,7 +19,7 @@ let searchObj = [];
 let regions = {};  // { (int)id: (obj)region }
 let currentRegion = { id: 10000002 };
 let presetRegion = 'The Forge';
-let presetTypeid = 29668;
+let presetTypeid = 44992; // PLEX
 
 // Format float in finance format with different precision
 function nFormatter(num) {
@@ -75,6 +75,7 @@ $.ajaxSetup({
   });
 
 function drawChart() {
+
   client.Market.get_markets_region_id_history(
       { region_id: currentRegion.id, type_id: presetTypeid },
       { responseContentType: 'application/json' },
@@ -84,6 +85,8 @@ function drawChart() {
           let lowest = [];
           let volume = [];
           let revenue = [];
+
+
           for (let i = 0, len = data.obj.length; i < len; i += 1) {
             average.push([Date.parse(data.obj[i].date), data.obj[i].average]);
             highest.push([Date.parse(data.obj[i].date), data.obj[i].highest]);
@@ -92,86 +95,104 @@ function drawChart() {
             revenue.push([Date.parse(data.obj[i].date), data.obj[i].volume * data.obj[i].average]);
           }
 
-          Highcharts.stockChart('chart', {
-              rangeSelector: {
-                  selected: 1
-                },
-              legend: {
-                  enabled: true
-                },
-              credits: {
-                  enabled: false
-                },
-              xAxis: {
-                  type: 'datetime',
-                  ordinal: false,
-                },
-              yAxis: [{ // Primary yAxis
-                  title: {
-                      text: 'Price'
-                    },
-                  height: '60%',
-                  opposite: true
-                }, { // Secondary yAxis
-                  title: {
-                      text: 'Revenue'
-                    },
-                  top: '65%',
-                  height: '35%',
-                  offset: 0,
-                  opposite: true
-                }, { // Tertiary yAxis
-                  labels: {
-                      align: 'left',
-                      x: 0
-                    },
-                  title: {
-                      text: 'Volume'
-                    },
-                  top: '65%',
-                  height: '35%',
-                  opposite: false
-                }],
-              series: [{
-                  name: 'Average',
-                  data: average,
-                  tooltip: {
-                      valueDecimals: 2,
-                      valueSuffix: ' ISK'
-                    },
-                }, {
-                  name: 'High',
-                  data: highest,
-                  tooltip: {
-                      valueDecimals: 2,
-                      valueSuffix: ' ISK'
-                    }
-                }, {
-                  name: 'Low',
-                  data: lowest,
-                  tooltip: {
-                      valueDecimals: 2,
-                      valueSuffix: ' ISK'
-                    }
-                }, {
-                  name: 'Volume',
-                  type: 'column',
-                  data: volume,
-                  yAxis: 2
-                }, {
-                  name: 'Revenue',
-                  type: 'areaspline',
-                  data: revenue,
-                  yAxis: 1,
-                  tooltip: {
-                      valueDecimals: 2,
-                      valueSuffix: ' ISK'
-                    },
-                  fillOpacity: 0.3,
-                  zIndex: 0
-                }]
-            });
-        }
+          var options = {
+            chart: {
+              renderTo: 'chart'
+            },
+            rangeSelector: {
+                selected: 1
+              },
+            legend: {
+                enabled: true
+              },
+            credits: {
+                enabled: false
+              },
+            xAxis: {
+                type: 'datetime',
+                ordinal: false,
+              },
+            yAxis: [{ // Primary yAxis
+                title: {
+                    text: 'Price'
+                  },
+                height: '60%',
+                opposite: true
+              }, { // Secondary yAxis
+                title: {
+                    text: 'Revenue'
+                  },
+                top: '65%',
+                height: '35%',
+                offset: 0,
+                opposite: true
+              }, { // Tertiary yAxis
+                labels: {
+                    align: 'left',
+                    x: 0
+                  },
+                title: {
+                    text: 'Volume'
+                  },
+                top: '65%',
+                height: '35%',
+                opposite: false
+              }],
+            series: [{
+                name: 'Average',
+                data: average,
+                tooltip: {
+                    valueDecimals: 2,
+                    valueSuffix: ' ISK'
+                  },
+              }, {
+                name: 'High',
+                data: highest,
+                tooltip: {
+                    valueDecimals: 2,
+                    valueSuffix: ' ISK'
+                  }
+              }, {
+                name: 'Low',
+                data: lowest,
+                tooltip: {
+                    valueDecimals: 2,
+                    valueSuffix: ' ISK'
+                  }
+              }, {
+                name: 'Volume',
+                type: 'column',
+                data: volume,
+                yAxis: 2
+              }, {
+                name: 'Revenue',
+                type: 'areaspline',
+                data: revenue,
+                yAxis: 1,
+                tooltip: {
+                    valueDecimals: 2,
+                    valueSuffix: ' ISK'
+                  },
+                fillOpacity: 0.3,
+                zIndex: 0
+              }, {
+                name: 'Online players',
+                type: 'areaspline',
+                yAxis: 2
+              }]
+          };
+
+          $.get('http://eve-offline.net/?server=tranquility&callback=?', function(data) {
+              console.log(JSON.parse(data));
+              // var el = $( '<div></div>' );
+              // el.html(data);
+              // console.log(el);
+              // options.series[5].data = [];
+              // var chart = new Highcharts.stockChart(options);
+          });
+
+          var chart = new Highcharts.stockChart(options);
+      }
   );
 }
 

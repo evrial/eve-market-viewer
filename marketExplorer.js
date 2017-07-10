@@ -182,14 +182,14 @@ function drawChart() {
               }]
           };
 
-          $.get('http://eve-offline.net/?server=tranquility&callback=?', function(data) {
-              console.log(JSON.parse(data));
+          // $.get('http://eve-offline.net/?server=tranquility&callback=?', function(data) {
+              // console.log(JSON.parse(data));
               // var el = $( '<div></div>' );
               // el.html(data);
               // console.log(el);
               // options.series[5].data = [];
               // var chart = new Highcharts.stockChart(options);
-          });
+          // });
 
           var chart = new Highcharts.stockChart(options);
       }
@@ -327,19 +327,19 @@ function loadUniverseMarket() {
             if (item.buy === true) {
               $buytable.row.add([
                   $('#regionSelector option:selected').text(),
-                  $.number(item.volume),
-                  $.number(item.price, 2),
+                  item.volume,
+                  item.price,
                   item.location.name,
                   item.range,
-                  $.number(item.minVolume),
+                  item.minVolume,
                   moment(item.issued).add(item.duration, 'days').fromNow(),
                   moment(item.issued).format('YYYY-MM-DD HH:mm:ss')
               ]);
             } else {
               $selltable.row.add([
                   $('#regionSelector option:selected').text(),
-                  $.number(item.volume),
-                  $.number(item.price, 2),
+                  item.volume,
+                  item.price,
                   item.location.name,
                   moment(item.issued).add(item.duration, 'days').fromNow(),
                   moment(item.issued).format('YYYY-MM-DD HH:mm:ss')
@@ -393,8 +393,8 @@ function openItem(typehref) {
             sellCap += item.volume * item.price;
             selltable.row.add([
                 currentRegion.name,
-                $.number(item.volume),
-                $.number(item.price, 2),
+                item.volume,
+                item.price,
                 item.location.name,
                 moment(item.issued).add(item.duration, 'days').fromNow(),
                 moment(item.issued).format('YYYY-MM-DD HH:mm:ss')
@@ -409,11 +409,11 @@ function openItem(typehref) {
             buyCap += item.volume * item.price;
             buytable.row.add([
                 currentRegion.name,
-                $.number(item.volume),
-                $.number(item.price, 2),
+                item.volume,
+                item.price,
                 item.location.name,
                 item.range,
-                $.number(item.minVolume),
+                item.minVolume,
                 moment(item.issued).add(item.duration, 'days').fromNow(),
                 moment(item.issued).format('YYYY-MM-DD HH:mm:ss')
             ]);
@@ -521,7 +521,7 @@ $(document).ready(function() {
             return result;
           }
       });
-
+// https://stackoverflow.com/questions/11341379/datatables-sorts-strings-instead-of-numeric
     $('#buy').DataTable({
         'paging': false,
         'scrollY': '40%',
@@ -532,7 +532,23 @@ $(document).ready(function() {
         'bDeferRender': false,
         'sDom': 'C<"clear">lfrtip',
         'order': [[2,'desc']],
+        // 'language': {
+        //   'decimal': ',',
+        //   'thousands': '.'
+        // },
         'columnDefs': [
+            {
+              render: function (data, type, row) {
+                return $.number(data);
+              },
+              targets: [1, 5]
+            },
+            {
+              render: function (data, type, row) {
+                return $.number(data, 2);
+              },
+              targets: [2]
+            },
             {className: 'dt-left'},
             {className: 'dt-right'},
             {className: 'dt-right'},
@@ -552,7 +568,22 @@ $(document).ready(function() {
         'bDeferRender': false,
         'sDom': 'C<"clear">lfrtip',
         'order': [[2,'asc']],
-        'columnDefs': [
+        // 'language': {
+        //   'decimal': ',',
+        //   'thousands': '.'
+        // },
+        'columnDefs': [{
+              render: function (data, type, row) {
+                return $.number(data);
+              },
+              targets: [1]
+            },
+            {
+              render: function (data, type, row) {
+                return $.number(data, 2);
+              },
+              targets: [2]
+            },
             {className: 'dt-left'},
             {className: 'dt-right'},
             {className: 'dt-right'},
